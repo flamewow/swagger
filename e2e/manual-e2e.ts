@@ -1,5 +1,4 @@
-import 'source-map-support/register';
-
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { NestFactory } from '@nestjs/core';
 import { ApplicationModule } from './src/app.module';
 import { DocumentBuilder, SwaggerModule } from '../lib';
