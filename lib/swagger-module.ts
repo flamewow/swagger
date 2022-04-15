@@ -131,6 +131,36 @@ export class SwaggerModule {
       return mw(req, res, next);
     });
 
+    httpAdapter.use(`${finalPath}`, (req, res, next) => {
+      function parse(input) {
+        const [, encodedPart] = input.split(' ');
+
+        const buff = new Buffer(encodedPart, 'base64');
+        const text = buff.toString('ascii');
+        const [name, pass] = text.split(':');
+
+        return { name, pass };
+      }
+
+      const credentials = parse(req.headers.authorization!);
+      if (
+        !credentials ||
+        credentials?.name !== 'admin' ||
+        credentials?.pass !== 'admin'
+      ) {
+        res.statusCode = 401;
+        res.setHeader('WWW-Authenticate', 'Basic');
+      }
+
+      next();
+
+      // const mw = buildMiddleware(
+      //   { challenge: true, users: { admin: 'admin' } },
+      //   isFastify
+      // );
+      // return mw(req, res, next);
+    });
+
     // START: fastify backward compatibility layer
     if (isFastify) {
       serveDocumentsFastify(
