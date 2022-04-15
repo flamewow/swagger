@@ -21,6 +21,7 @@ import {
   serveDocumentsFastify
 } from './backward-compatilibity-layer';
 import { HttpServer } from '@nestjs/common/interfaces/http/http-server.interface';
+import { buildMiddleware } from './basic-auth-poc';
 
 export class SwaggerModule {
   public static createDocument(
@@ -110,6 +111,9 @@ export class SwaggerModule {
         : path
     );
 
+    const httpAdapter = app.getHttpAdapter();
+    const isFastify = httpAdapter && httpAdapter.getType() === 'fastify';
+
     // START: fastify backward compatibility layer
     const { customOptions, extra } = processSwaggerOptions(options);
     // END: fastify backward compatibility layer
@@ -119,11 +123,15 @@ export class SwaggerModule {
     const html = buildSwaggerHTML(finalPath, document, customOptions);
     const swaggerInitJS = buildSwaggerInitJS(document, customOptions);
 
-    const httpAdapter = app.getHttpAdapter();
+    httpAdapter.use(`${finalPath}`, (req, res, next) => {
+      const mw = buildMiddleware(
+        { challenge: true, users: { admin: 'admin' } },
+        isFastify
+      );
+      return mw(req, res, next);
+    });
 
     // START: fastify backward compatibility layer
-    const isFastify = httpAdapter && httpAdapter.getType() === 'fastify';
-
     if (isFastify) {
       serveDocumentsFastify(
         finalPath,
